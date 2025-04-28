@@ -1,0 +1,33 @@
+name: CI
+on: [push]
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: etl_user
+          POSTGRES_PASSWORD: etl_pass
+          POSTGRES_DB: etl_db
+        ports: ['5432:5432']
+      zookeeper:
+        image: wurstmeister/zookeeper:3.4.6
+      kafka:
+        image: wurstmeister/kafka:2.13-2.7.0
+        options: >-
+          --link zookeeper:zk
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+      - name: Install dependencies and Lint
+        run: |
+          pip install flake8
+          flake8 .
+      - name: Test Extractor
+        run: python extractor/scraper.py
+      - name: Test Transformer (dry-run)
+        run: python transformer/transformer.py --help
